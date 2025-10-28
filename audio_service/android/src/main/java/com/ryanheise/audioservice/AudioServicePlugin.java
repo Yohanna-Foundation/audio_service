@@ -114,19 +114,27 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
     }
 
     public static synchronized void disposeFlutterEngine() {
-        for (ClientInterface clientInterface : clientInterfaces) {
-            if (clientInterface.activity != null) {
-                // Don't destroy the engine if a new activity started and
-                // bound to the service in the time since the previous activity
-                // unbound from it.
-                return;
-            }
-        }
         FlutterEngine flutterEngine = FlutterEngineCache.getInstance().get(flutterEngineId);
         if (flutterEngine != null) {
             flutterEngine.destroy();
             FlutterEngineCache.getInstance().remove(flutterEngineId);
         }
+        
+        // Clear all client interfaces
+        clientInterfaces.clear();
+        mainClientInterface = null;
+        audioHandlerInterface = null;
+    }
+
+    public static synchronized void forceCompleteCleanup() {
+        disposeFlutterEngine();
+        AudioService.forceCleanup();
+        
+        // Clear all static references
+        mediaBrowser = null;
+        mediaController = null;
+        flutterReady = false;
+        configureResult = null;
     }
 
     private static final String CHANNEL_CLIENT = "com.ryanheise.audio_service.client.methods";
@@ -358,6 +366,7 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
             // happen which in turn allows the FlutterEngine to be destroyed.
             disconnect();
         }
+        
         if (clientInterface == mainClientInterface) {
             mainClientInterface = null;
         }

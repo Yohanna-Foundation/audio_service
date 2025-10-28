@@ -110,6 +110,12 @@ public class AudioService extends MediaBrowserServiceCompat {
         AudioService.listener = listener;
     }
 
+    public static void forceCleanup() {
+        if (instance != null) {
+            instance.stop();
+        }
+    }
+
     public static int toKeyCode(long action) {
         if (action == PlaybackStateCompat.ACTION_PLAY) {
             return KEYCODE_BYPASS_PLAY;
@@ -361,10 +367,17 @@ public class AudioService extends MediaBrowserServiceCompat {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        
+        if (listener != null) {
+            // Stop audio playback first
+            listener.onStop();
+        }
+
         if (listener != null) {
             listener.onDestroy();
             listener = null;
         }
+        
         mediaMetadata = null;
         artBitmap = null;
         queue.clear();
@@ -372,14 +385,13 @@ public class AudioService extends MediaBrowserServiceCompat {
         controls.clear();
         artBitmapCache.evictAll();
         compactActionIndices = null;
+        
         releaseMediaSession();
+        
         ServiceCompat.stopForeground(this, config.androidResumeOnClick ? STOP_FOREGROUND_DETACH : STOP_FOREGROUND_REMOVE);
-        // This still does not solve the Android 11 problem.
-        // if (notificationCreated) {
-        //     NotificationManager notificationManager = getNotificationManager();
-        //     notificationManager.cancel(NOTIFICATION_ID);
-        // }
+        
         releaseWakeLock();
+        
         instance = null;
         notificationCreated = false;
     }
@@ -874,6 +886,11 @@ public class AudioService extends MediaBrowserServiceCompat {
         if (listener != null) {
             listener.onTaskRemoved();
         }
+        
+        // Force complete cleanup when app is swiped away
+        deactivateMediaSession();
+        AudioServicePlugin.forceCompleteCleanup();
+        
         super.onTaskRemoved(rootIntent);
     }
 
