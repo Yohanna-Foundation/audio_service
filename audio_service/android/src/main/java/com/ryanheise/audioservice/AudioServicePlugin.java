@@ -128,7 +128,9 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
 
     public static synchronized void forceCompleteCleanup() {
         disposeFlutterEngine();
-        AudioService.forceCleanup();
+        
+        //Delegates the service cleanup to the AudioService, and has to come after MediaSessions have been deactivated.
+        AudioService.forceCleanup(); 
         
         // Clear all static references
         mediaBrowser = null;
