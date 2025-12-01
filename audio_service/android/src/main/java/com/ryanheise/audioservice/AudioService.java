@@ -890,6 +890,8 @@ public class AudioService extends MediaBrowserServiceCompat {
         // Force complete cleanup when app is swiped away
         deactivateMediaSession();
         AudioServicePlugin.forceCompleteCleanup();
+
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         
         super.onTaskRemoved(rootIntent);
     }
